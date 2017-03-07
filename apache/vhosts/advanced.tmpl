@@ -1,5 +1,6 @@
 {# Define default values here so the template below can just focus on layout #}
 {%- from "apache/map.jinja" import apache with context -%}
+{%- import 'apache/vhosts/helpers.jinja' as helpers %}
 {%- set sitename = site.get('ServerName', id) -%}
 
 {# 
@@ -82,35 +83,15 @@ CumtomLog simple loop
     {%-   endif %}
     {%- endif %}
 
-    {%- macro module_config_ouput(mod_name, ordered=False) -%}
-    <IfModule {{mod_name}}_module>
-    {%- set mod_data = site.get('modules',{}).get(mod_name,{}) %}
-    {%- for property, property_data in mod_data.items() %}
-    {%- if property != 'Formula_Append' %}
-        {%- if ordered %}
-            {%- set property = property[3:] %}
-        {%- endif %}
-        {%- if property_data is string %}
-        {{property}} {{property_data}}
-        {%- else %}
-        {%- for item in property_data %}
-        {{property}} {{item}}
-        {%- endfor %}
-        {%- endif %}
-    {%- endif %}
-    {%- endfor %}
-    {%- if mod_data.get('Formula_Append') %}
-    {{ mod_data.Formula_Append|indent(8) }}
-    {%- endif %}
-    </IfModule>
-    {%- endmacro %}
 
-    {{ module_config_ouput('setenvif') }}
-    {{ module_config_ouput('remoteip') }}
-    {{ module_config_ouput('headers') }}
 
-    {{ module_config_ouput('expires', True) }}
-    {{ module_config_ouput('alias') }}
+    {{ helpers.module_config_ouput('setenvif') }}
+    {{ helpers.module_config_ouput('remoteip') }}
+    {{ helpers.module_config_ouput('headers') }}
+
+    {{ helpers.module_config_ouput('expires', True) }}
+    {{ helpers.module_config_ouput('alias') }}
+    
     # module_config_ouput('jk', True)
 
     {%- for path, dir in site.get('Directory', {}).items() -%}
