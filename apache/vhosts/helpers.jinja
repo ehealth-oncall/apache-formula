@@ -1,6 +1,7 @@
 {%- macro module_config_ouput(mod_name, ordered=False) -%}
 <IfModule {{mod_name}}_module>
 {%- set mod_data = site.get('modules',{}).get(mod_name,{}) %}
+{# force alpha sorted list ? seems to be natuarlly sorted, but is that guaranteed #}
 {%- for property, property_data in mod_data.items() %}
 {%- if property != 'Formula_Append' %}
     {%- if ordered %}
@@ -19,4 +20,74 @@
 {{ mod_data.Formula_Append|indent(8) }}
 {%- endif %}
 </IfModule>
+{%- endmacro %}
+
+
+{%- macro module_proxy_ouput(ordered=False) -%}
+{%- if  site.get('modules',{}).get('proxy',{}) %}
+
+{% set proxy_data = site.get('modules',{}).get('proxy') %}
+{% set vals = { 
+    'ProxyRequests': proxy_data.get('ProxyRequests', 'Off'),
+    'ProxyPreserveHost': proxy_data.get('ProxyPreserveHost', 'On'),
+    'ProxyRoutes': proxy_data.get('ProxyRoutes', {}),
+} %}
+<IfModule proxy_module>
+ProxyRequests {{ vals.ProxyRequests }}
+ProxyPreserveHost {{ vals.ProxyPreserveHost }}
+{# sorting? #}
+{% for proxy, proxyargs in vals.ProxyRoutes|dictsort|reverse %}
+{% set proxyvals = {
+    'ProxyPassSource': proxyargs.get('ProxyPassSource', '/'),
+    'ProxyPassTarget': proxyargs.get('ProxyPassTarget', 'https://{0}'.format(sitename)),
+    'ProxyPassTargetOptions': proxyargs.get('ProxyPassTargetOptions', ''),
+    'ProxyPassReverseSource': proxyargs.get('ProxyPassReverseSource', '/'),
+    'ProxyPassReverseTarget': proxyargs.get('ProxyPassReverseTarget', proxyargs.get('ProxyPassTarget', 'https://{0}'.format(sitename))),
+} %}
+######### {{proxy}} #########
+ProxyPass               {{ proxyvals.ProxyPassSource }} {{ proxyvals.ProxyPassTarget }} {{ proxyvals.ProxyPassTargetOptions }}
+ProxyPassReverse        {{ proxyvals.ProxyPassReverseSource }} {{ proxyvals.ProxyPassReverseTarget }}
+{% endfor %}
+
+{%- if proxy_data.get('Formula_Append') %}
+{{ proxy_data.Formula_Append|indent(8) }}
+{%- endif %}
+</IfModule>
+
+{%- endif %}
+{%- endmacro %}
+
+
+
+
+{%- macro module_rewrite_ouput(ordered=False) -%}
+{%- if  site.get('modules',{}).get('rewrite',{}) %}
+
+{% set rewrite_data = site.get('modules',{}).get('rewrite') %}
+{% set vals = { 
+    'RewriteEngine': rewrite_data.get('RewriteEngine', 'Off'),
+    'RuleSets': rewrite_data.get('RuleSets', {}),
+} %}
+<IfModule proxy_module>
+RewriteEngine {{ vals.RewriteEngine }}
+{# sorting? #}
+{% for ruleset, rule in vals.RuleSets|dictsort|reverse %}
+{% set rulesetvals = {
+    'RewriteCondition': rule.get('RewriteCondition', {}),
+    'RewriteRule': rule.get('RewriteRule', '\".*\" \"-\"'),
+} %}
+######### {{ruleset}} #########
+{%- for item in rulesetvals.RewriteCondition %}
+RewriteCondition {{item}}
+{%- endfor %}
+RewriteRule {{ rulesetvals.RewriteRule }}
+
+{% endfor %}
+
+{%- if rewrite_data.get('Formula_Append') %}
+{{ rewrite_data.Formula_Append|indent(8) }}
+{%- endif %}
+</IfModule>
+
+{%- endif %}
 {%- endmacro %}

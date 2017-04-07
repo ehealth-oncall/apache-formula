@@ -7,10 +7,7 @@
 things to add loop configure:
 Rewrite (multi level loop)
 Proxy (copy from proxy template?)
-Header simple loop
-SetEnvIfNoCase simple loop
 CumtomLog simple loop
-
  #}
 
 {%- set vals = {
@@ -93,6 +90,10 @@ CumtomLog simple loop
     {{ helpers.module_config_ouput('alias') }}
     
     # module_config_ouput('jk', True)
+    {{ helpers.module_rewrite_output() }}
+
+    {{ helpers.module_proxy_output() }}
+
 
     {%- for path, dir in site.get('Directory', {}).items() -%}
     {%- set dvals = {
